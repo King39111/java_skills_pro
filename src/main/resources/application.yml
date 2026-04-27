@@ -1,0 +1,75 @@
+server:
+  port: 19999
+
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  datasource:
+    # 添加默认数据源配置
+    url: jdbc:mysql://127.0.0.1:3306/grc_boot_new?rewriteBatchedStatements=true&characterEncoding=UTF-8&useUnicode=true&useSSL=false&tinyInt1isBit=false&allowPublicKeyRetrieval=true&serverTimezone=GMT%2B8
+    username: root
+    password: esc@t0pSek
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.zaxxer.hikari.HikariDataSource
+    dynamic:
+      primary: master
+      strict: false
+      druid:
+        initial-size: 5
+        min-idle: 5
+        maxActive: 20
+        maxWait: 60000
+        timeBetweenEvictionRunsMillis: 60000
+        minEvictableIdleTimeMillis: 300000
+        validationQuery: SELECT 1 FROM DUAL
+        testWhileIdle: true
+        testOnBorrow: false
+        testOnReturn: false
+        poolPreparedStatements: true
+        maxPoolPreparedStatementPerConnectionSize: 20
+        filters: stat,wall,slf4j
+      datasource:
+        master:
+          url: jdbc:mysql://127.0.0.1:3306/grc_boot_new?rewriteBatchedStatements=true&characterEncoding=UTF-8&useUnicode=true&useSSL=false&tinyInt1isBit=false&allowPublicKeyRetrieval=true&serverTimezone=GMT%2B8
+          username: root
+          password: esc@t0pSek
+          driver-class-name: com.mysql.cj.jdbc.Driver
+    #redis 配置
+    redis:
+      # 缓存过期时间配置  代码中有*2操作  配置6小时--》实际为12小时
+      dataOutTime: 6
+      database: 0
+      host: 127.0.0.1
+      lettuce:
+        pool:
+          max-active: 8   #最大连接数据库连接数,设 0 为没有限制
+          max-idle: 8     #最大等待连接中的数量,设 0 为没有限制
+          max-wait: -1ms  #最大建立连接等待时间。如果超过此时间将接到异常。设为-1表示无限制。
+          min-idle: 0     #最小等待连接中的数量,设 0 为没有限制
+        shutdown-timeout: 100ms
+      password: ''
+      port: 6379
+    #ES配置
+    elasticsearch:
+      uris: https://127.0.0.1:9200
+      username: elastic
+      password: Horiz0n@2022
+  #mybatis plus 设置
+  mybatis-plus:
+    mapper-locations: classpath*:org/jeecg/**/*Mapper.xml,classpath*:org/jeecg/modules/**/xml/*Mapper.xml,classpath*:mapper/**/*.xml
+    global-config:
+      # 关闭MP3.0自带的banner
+      banner: false
+      db-config:
+        #主键类型  0:"数据库ID自增",1:"该类型为未设置主键类型", 2:"用户输入ID",3:"全局唯一ID (数字类型唯一ID)", 4:"全局唯一ID UUID",5:"字符串全局唯一ID (idWorker 的字符串表示)";
+        id-type: 4
+        # 默认数据库表下划线命名
+        table-underline: true
+    configuration:
+      # 这个配置会将执行的sql打印出来，在开发或测试的时候可以用
+      log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+      # 返回类型为Map,显示null对应的字段
+      call-setters-on-nulls: true
+
+qianwen:
+  API_KEY: sk-f5bb24c138ea4b7996e67c215d729c20
