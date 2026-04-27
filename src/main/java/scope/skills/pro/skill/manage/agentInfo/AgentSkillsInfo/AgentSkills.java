@@ -30,6 +30,16 @@ public class AgentSkills {
 
     private static String apiKey = "sk-f5bb24c138ea4b7996e67c215d729c20";
 
+
+    public static DashScopeChatModel createDashScopeChatModel(){
+        return DashScopeChatModel.builder()
+                .apiKey(apiKey)
+                .modelName("qwen3-max")
+                .stream(true)
+                .enableThinking(true)
+                .build();
+    }
+
     public static ReActAgent createAgentForUser(InMemoryMemory memory) {
         // 复用你现有的 Agent 创建逻辑
         Toolkit toolkit = new Toolkit();
@@ -49,12 +59,7 @@ public class AgentSkills {
                 .name("Assistant")
                 // 提示词
                 .sysPrompt("You are a helpful assistant.")
-                .model(DashScopeChatModel.builder()
-                        .apiKey(apiKey)
-                        .modelName("qwen3-max")
-                        .stream(true)
-                        .enableThinking(true)
-                        .build())
+                .model(AgentSkills.createDashScopeChatModel())
                 .memory(memory)
                 .build();
     }
