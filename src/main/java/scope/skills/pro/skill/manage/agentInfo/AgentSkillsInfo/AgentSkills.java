@@ -2,6 +2,7 @@ package scope.skills.pro.skill.manage.agentInfo.AgentSkillsInfo;
 
 import io.agentscope.core.ReActAgent;
 import io.agentscope.core.agent.Event;
+import io.agentscope.core.agent.EventType;
 import io.agentscope.core.hook.*;
 import io.agentscope.core.memory.InMemoryMemory;
 import io.agentscope.core.message.Msg;
@@ -17,6 +18,7 @@ import io.agentscope.core.tool.AgentTool;
 import io.agentscope.core.tool.ToolCallParam;
 import io.agentscope.core.tool.Toolkit;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.poi.ss.formula.functions.T;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -92,7 +94,7 @@ public class AgentSkills {
         return ReActAgent.builder()
                 .skillBox(skillBox)
                 .name("Assistant")
-                .hook(createLogHook())
+                .hook(new AgentHook().createLogHook())
                 // 提示词
                 .sysPrompt("You are a helpful assistant.")
                 .model(AgentSkills.createDashScopeChatModel())
@@ -110,26 +112,26 @@ public class AgentSkills {
             Msg buildMsg = Msg.builder()
                     .textContent(choice)
                     .build();
-            // 3. 使用 Agent
-            Mono<Msg> mono = agent.call(buildMsg);
+
             Flux<Event> stream = agent.stream(buildMsg);
 //            Event event = stream.blockFirst();
             stream.buffer().subscribe(events -> {
                 for (Event event : events) {
-                    System.out.println("Thinking: " + event.getMessage().getTextContent());
+//                    if (event.getType() == EventType.)
+//                        System.out.println(event.getMessage().getTextContent());
+
                 }
             });
+//            stream.buffer().subscribe();
 
-//            stream.map(Event::getMessage).blockFirst()
-//            String textContent = event.getMessage().getTextContent();
-//            System.out.println("Thinking: " + textContent);
-            System.out.println("流式输出已完成 ");
-            Msg response = mono.block();
-            if (response != null && response.getTextContent() != null) {
-                System.out.println(response.getTextContent());
-            } else {
-                System.out.println("没有返回结果");
-            }
+            // 3. 使用 Agent  Mono响应
+//            Mono<Msg> mono = agent.call(buildMsg);
+//            Msg response = mono.block();
+//            if (response != null && response.getTextContent() != null) {
+//                System.out.println(response.getTextContent());
+//            } else {
+//                System.out.println("没有返回结果");
+//            }
         }
     }
 
@@ -182,32 +184,5 @@ public class AgentSkills {
     }
 
 
-    public static Hook createLogHook(){
-        Hook loggingHook = new Hook() {
-            @Override
-            public <T extends HookEvent> Mono<T> onEvent(T event) {
-                // 处理不同类型的事件
-                if (event instanceof PreCallEvent) {
-                    System.out.println("智能体开始处理...");
-                    return Mono.just(event);
-                } else if (event instanceof ReasoningChunkEvent) {
-                    ReasoningChunkEvent chunkEvent = (ReasoningChunkEvent) event;
-                    System.out.print(chunkEvent.getIncrementalChunk().getTextContent());  // 打印流式输出
-                    return Mono.just(event);
-                } else if (event instanceof PostCallEvent) {
-                    PostCallEvent postCallEvent = (PostCallEvent) event;
-                    System.out.println("处理完成: " + postCallEvent.getFinalMessage().getTextContent());
-                    return Mono.just(event);
-                } else {
-                    return Mono.just(event);
-                }
-            }
 
-            @Override
-            public int priority() {
-                return 50;  // 高优先级
-            }
-        };
-        return loggingHook;
-    }
 }
