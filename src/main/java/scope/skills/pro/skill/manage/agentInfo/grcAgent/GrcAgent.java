@@ -24,31 +24,6 @@ public class GrcAgent {
 
     public ReActAgent createGrcAgent(){
 
-        // dify知识库
-        DifyRAGConfig difyConfig = DifyRAGConfig.builder()
-                .apiKey(System.getenv("DIFY_RAG_API_KEY"))
-                .datasetId("your-dataset-id")
-                .retrievalMode(RetrievalMode.HYBRID_SEARCH)
-                .topK(10).scoreThreshold(0.5)
-                .build();
-
-        DifyKnowledge difyKnowledge = DifyKnowledge.builder().config(difyConfig).build();
-
-        List<Document> difyResults = difyKnowledge.retrieve("查询内容",
-                RetrieveConfig.builder().limit(5).build()).block();
-        // ragflow知识库
-        RAGFlowConfig ragflowConfig = RAGFlowConfig.builder()
-                .apiKey("ragflow-your-api-key")             // 必填：API Key
-                .baseUrl("http://address")           // 必填：RAGFlow 服务地址
-                .addDatasetId("dataset-id")                 // 必填：至少设置 dataset_ids 或 document_ids
-                .topK(10).similarityThreshold(0.3)
-                .build();
-
-        RAGFlowKnowledge ragflowKnowledge = RAGFlowKnowledge.builder().config(ragflowConfig).build();
-
-        List<Document> ragflowResults   = ragflowKnowledge.retrieve("查询内容",
-                RetrieveConfig.builder().limit(5).build()).block();
-
         ReActAgent agent = ReActAgent.builder()
                 .name("助手")
                 .sysPrompt("你是一个可以访问知识库的有用助手。" +
@@ -57,8 +32,8 @@ public class GrcAgent {
                         "")
                 .model(AgentSkills.createDashScopeChatModel())
                 .toolkit(new Toolkit())
+                .knowledge(null)
                 // 启用 Generic RAG 模式
-                .knowledge(difyKnowledge)
                 .ragMode(RAGMode.GENERIC)
                 // agentic模式
 //                .ragMode(RAGMode.AGENTIC)
