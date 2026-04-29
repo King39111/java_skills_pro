@@ -36,7 +36,9 @@ public class RuntimeConfig {
     @Bean
     @ConditionalOnMissingBean
     public SandboxService sandboxService() {
-        return new SandboxService(ManagerConfig.builder().sandboxMap(new InMemorySandboxMap()).build());
+        return new SandboxService(ManagerConfig.builder()
+                .sandboxMap(new InMemorySandboxMap())
+                .build());
     }
 
     @Bean

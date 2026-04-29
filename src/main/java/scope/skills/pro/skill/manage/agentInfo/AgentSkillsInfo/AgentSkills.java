@@ -53,7 +53,6 @@ public class AgentSkills {
      */
     public static ReActAgent createAgentForUser(InMemoryMemory memory, Toolkit toolkit) {
         SkillBox skillBox = new SkillBox(toolkit);
-
         try {
             ClasspathSkillRepository repository = new ClasspathSkillRepository("skills");
             List<AgentSkill> allSkills = repository.getAllSkills();
@@ -83,7 +82,6 @@ public class AgentSkills {
                         .skill(AgentSkill)
                         .tool(loadDataTool)
                         .apply();
-//                skillBox.registerSkill(AgentSkill);
             });
             System.out.println("Loaded skills: " + allSkills);
         } catch (Exception e) {
@@ -121,6 +119,14 @@ public class AgentSkills {
     public static ReActAgent createAgentForUser() {
         return createAgentForUser(new InMemoryMemory(),new Toolkit());
     }
+    /**
+     * 创建一个无记忆技能智能体
+     *
+     * @return 技能智能体
+     */
+    public static ReActAgent createAgentForUser(Toolkit toolkit) {
+        return createAgentForUser(new InMemoryMemory(),toolkit);
+    }
 
 
     public void talk(ReActAgent agent) {
@@ -132,7 +138,6 @@ public class AgentSkills {
             Msg buildMsg = Msg.builder()
                     .textContent(choice)
                     .build();
-
             Flux<Event> stream = agent.stream(buildMsg);
 //            Event event = stream.blockFirst();
             stream.buffer().subscribe(events -> {

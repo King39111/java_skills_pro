@@ -29,7 +29,6 @@ public class LocalPathTest {
         // 启动 Spring 上下文
         System.out.println("正在启动 Spring Boot 应用...");
         ConfigurableApplicationContext context = SpringApplication.run(LocalPathTest.class, args);
-
         start(null, null);
         context.close();
         System.out.println("程序执行完毕");

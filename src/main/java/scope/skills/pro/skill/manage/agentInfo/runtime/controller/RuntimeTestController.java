@@ -1,40 +1,47 @@
 package scope.skills.pro.skill.manage.agentInfo.runtime.controller;
 
+import io.agentscope.core.ReActAgent;
 import io.agentscope.core.agent.Event;
+import io.agentscope.core.message.Msg;
+import io.agentscope.runtime.app.AgentApp;
 import io.agentscope.runtime.engine.schemas.AgentRequest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import scope.skills.pro.skill.manage.agentInfo.runtime.MyFridayAgentHandler;
 
-/**
- * 类描述
- */
+import java.util.Set;
 
+/**
+ * 测试控制层
+ */
 @RestController
 @RequestMapping("/runtime")
 public class RuntimeTestController {
-//
+    //
     @Autowired(required = false)
     private MyFridayAgentHandler myFridayAgentHandler = new MyFridayAgentHandler();
+    private String agentId;
+    private ReActAgent agent;
 
     @PostMapping("/test")
     public String test(@RequestBody String question) {
-        AgentRequest request = new AgentRequest();
-        Flux<Event> hello = myFridayAgentHandler.streamQuery(request, question);
-
-        // 只订阅流，不返回给前端，所有结果打印到控制台
-//        hello.subscribe(
-//                event -> System.out.println("收到事件：" + event),      // 收到数据时打印
-//                error -> {                                            // 异常时打印错误
-//                    System.err.println("处理异常：" + error.getMessage());
-//                    error.printStackTrace();
-//                },
-//                () -> System.out.println("流处理完成！")               // 流结束时打印
-//        );
-//        hello.subscribe();
-//        System.out.println(question);
-        // 直接给前端返回一个成功提示，请求不会挂掉
+        AgentRequest request = new AgentRequest() {{
+            setSessionId("123");
+        }};
+        if (agentId == null  || !agentId.equals(agent.getAgentId()))
+            agent = myFridayAgentHandler.agentSandbox(null, null);
+        if (agentId != agent.getAgentId())
+            agentId = agent.getAgentId();
+        AgentApp agentApp = new AgentApp(myFridayAgentHandler);
+        agentApp.run(9998);
+        agentId = agent.getAgentId();
+        Set<String> toolNames = agent.getToolkit().getToolNames();
+        Flux<Event> stream = agent.stream(Msg.builder().textContent(question).build());
+        stream.subscribe();
         return "请求已提交，结果正在控制台输出中...";
     }
 }
