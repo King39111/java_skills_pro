@@ -2,8 +2,6 @@ package scope.skills.pro.skill.manage.agentInfo.AgentSkillsInfo;
 
 import io.agentscope.core.ReActAgent;
 import io.agentscope.core.agent.Event;
-import io.agentscope.core.agent.EventType;
-import io.agentscope.core.hook.*;
 import io.agentscope.core.memory.InMemoryMemory;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.ToolResultBlock;
@@ -18,8 +16,6 @@ import io.agentscope.core.tool.AgentTool;
 import io.agentscope.core.tool.ToolCallParam;
 import io.agentscope.core.tool.Toolkit;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.ObjectUtils;
-import org.apache.poi.ss.formula.functions.T;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import scope.skills.pro.skill.manage.agentInfo.entity.ProductInfo;
@@ -48,9 +44,14 @@ public class AgentSkills {
                 .build();
     }
 
-    public static ReActAgent createAgentForUser(InMemoryMemory memory) {
-        // 复用你现有的 Agent 创建逻辑
-        Toolkit toolkit = new Toolkit();
+    /**
+     * 创建有记忆的一个技能智能体
+     *
+     * @param memory 内存
+     * @param toolkit 工具集
+     * @return 技能智能体
+     */
+    public static ReActAgent createAgentForUser(InMemoryMemory memory, Toolkit toolkit) {
         SkillBox skillBox = new SkillBox(toolkit);
 
         try {
@@ -60,7 +61,7 @@ public class AgentSkills {
                 AgentTool loadDataTool = new AgentTool() {
                     @Override
                     public String getName() {
-                        return AgentSkill.getName()+"tool";
+                        return AgentSkill.getName() + "tool";
                     }
 
                     @Override
@@ -100,6 +101,25 @@ public class AgentSkills {
                 .model(AgentSkills.createDashScopeChatModel())
                 .memory(memory)
                 .build();
+    }
+    /**
+     * 有记忆的默认技能智能体
+     *
+     * @param memory 内存
+     * @return 技能智能体
+     */
+    public static ReActAgent createAgentForUser(InMemoryMemory memory) {
+        return createAgentForUser(memory, new Toolkit());
+    }
+
+
+    /**
+     * 创建一个默认技能智能体
+     *
+     * @return 技能智能体
+     */
+    public static ReActAgent createAgentForUser() {
+        return createAgentForUser(new InMemoryMemory(),new Toolkit());
     }
 
 
@@ -182,7 +202,6 @@ public class AgentSkills {
             System.out.println("没有返回结果");
         }
     }
-
 
 
 }

@@ -55,6 +55,5 @@ public class LocalPathTest {
         agent.saveTo(session, key);
         scanner.close();
         System.out.println("对话已结束");
-
     }
 }
