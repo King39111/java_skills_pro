@@ -49,7 +49,6 @@ public class MyFridayAgentHandler extends AgentScopeAgentHandler implements Agen
     @NonNull
     public Flux<Event> streamQuery(AgentRequest request, Object messages) {
         ReActAgent agent = agentSandbox(request, messages);
-//        new AgentSkills().talk(agent);
         // 5. 调用智能体并返回流式响应
         // AgentScope的stream方法返回Flux<Event>，与Runtime的接口完美匹配
         for (Object python : agent.getToolkit().getToolNames().stream().filter(name -> name.contains("python")).toArray()) {
@@ -65,7 +64,7 @@ public class MyFridayAgentHandler extends AgentScopeAgentHandler implements Agen
             sandboxService = new SandboxService(ManagerConfig.builder()
                     .sandboxMap(new InMemorySandboxMap())
                     // 修改为当前应用的地址和端口，实现内部调用
-                    .baseUrl("http://localhost:19999")
+                    .baseUrl("http://localhost:8999")
                     .build());
         }
         // 1. 获取或创建与当前会话关联的沙箱
@@ -78,9 +77,6 @@ public class MyFridayAgentHandler extends AgentScopeAgentHandler implements Agen
                 log.info("Error creating sandbox: " + e.getMessage());
             }
         }
-//        String sandboxStatus = sandboxService.getSandboxStatus("user_1234", "user_1234", "python");
-//        System.out.println("sandbox  status : " + sandboxStatus);
-//        boolean b = sandboxService.startSandbox("user_1234", "user_1234", "python");
         // 2. 构建工具集(Toolkit)，并将沙箱能力封装成工具
         Toolkit toolkit = new Toolkit();
         if (sandbox != null) {

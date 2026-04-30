@@ -28,12 +28,10 @@ public class RuntimeTestController {
     private ReActAgent agent;
 
     @PostMapping("/test")
-    public String test(@RequestBody String question) {
-        AgentRequest request = new AgentRequest() {{
-            setSessionId("123");
-        }};
+    public String test(@RequestBody AgentRequest request, @RequestBody String question) {
+
         if (agentId == null  || !agentId.equals(agent.getAgentId()))
-            agent = myFridayAgentHandler.agentSandbox(null, null);
+            agent = myFridayAgentHandler.agentSandbox(request, null);
         if (agentId != agent.getAgentId())
             agentId = agent.getAgentId();
         AgentApp agentApp = new AgentApp(myFridayAgentHandler);
