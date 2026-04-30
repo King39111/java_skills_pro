@@ -2,9 +2,10 @@ package scope.skills.pro.skill.manage.agentInfo.runtime.controller;
 
 import io.agentscope.core.ReActAgent;
 import io.agentscope.core.agent.Event;
+import io.agentscope.core.agent.EventType;
 import io.agentscope.core.message.Msg;
-import io.agentscope.runtime.app.AgentApp;
-import io.agentscope.runtime.engine.schemas.AgentRequest;
+import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -12,34 +13,100 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import scope.skills.pro.skill.manage.agentInfo.runtime.MyFridayAgentHandler;
+import scope.skills.pro.skill.manage.agentInfo.runtime.vo.RequestionByUser;
 
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 测试控制层
  */
+@Log4j2
 @RestController
 @RequestMapping("/runtime")
 public class RuntimeTestController {
-    //
+
     @Autowired(required = false)
-    private MyFridayAgentHandler myFridayAgentHandler = new MyFridayAgentHandler();
+    private MyFridayAgentHandler myFridayAgentHandler;
+
     private String agentId;
     private ReActAgent agent;
 
     @PostMapping("/test")
-    public String test(@RequestBody AgentRequest request, @RequestBody String question) {
+    public String test(
+            @RequestBody RequestionByUser request
+    ) {
+        try {
+            if (ObjectUtils.isEmpty(agent)) {
+                log.info("🔧 正在创建带沙箱的新智能体...");
+                agent = myFridayAgentHandler.createAgentWithSandbox(request);
+                agentId = agent.getAgentId();
+                Set<String> toolNames = agent.getToolkit().getToolNames();
+                log.info("🛠️ 可用工具: {}", toolNames);
 
-        if (agentId == null  || !agentId.equals(agent.getAgentId()))
-            agent = myFridayAgentHandler.agentSandbox(request, null);
-        if (agentId != agent.getAgentId())
-            agentId = agent.getAgentId();
-        AgentApp agentApp = new AgentApp(myFridayAgentHandler);
-        agentApp.run(9998);
-        agentId = agent.getAgentId();
-        Set<String> toolNames = agent.getToolkit().getToolNames();
-        Flux<Event> stream = agent.stream(Msg.builder().textContent(question).build());
-        stream.subscribe();
-        return "请求已提交，结果正在控制台输出中...";
+            }
+
+//            // 使用更明确的指令，强制智能体调用 Python 工具
+//            String testPrompt = "请使用 Python 代码计算 1+1 的结果，并打印出来。必须使用 run_python_code 工具执行。";
+//
+//            log.info("🚀 开始执行智能体流，提示词: {}", testPrompt);
+
+            CountDownLatch latch = new CountDownLatch(1);
+            final StringBuilder result = new StringBuilder();
+            final boolean[] hasError = {false};
+            final int[] eventCount = {0};
+
+            Flux<Event> stream = agent.stream(Msg.builder()
+                    .textContent(request.getRequestion())
+                    .build());
+
+            stream.doOnNext(event -> {
+                        eventCount[0]++;
+                        if (event.getType() == EventType.TOOL_RESULT) {
+                            log.info("✅ ✅ ✅ 收到工具执行结果！");
+                            if (event.getMessage() != null) {
+                                log.info("   工具结果内容: {}", event.getMessage());
+                            }
+                        }
+                        if (event.getMessage() != null) {
+                            String textContent = event.getMessage().getTextContent();
+                            if (textContent != null && !textContent.isEmpty()) {
+                                log.info("💬 消息: {}", textContent);
+                                result.append(textContent);
+                            }
+                        }
+                    })
+                    .doOnError(error -> {
+                        log.error("❌ 流错误: {}", error.getMessage(), error);
+                        hasError[0] = true;
+                        latch.countDown();
+                    })
+                    .doOnComplete(() -> {
+                        log.info("\n✅ 流执行完成。总事件数: {}", eventCount[0]);
+                        latch.countDown();
+                    })
+                    .subscribe();
+
+            log.info("⏳ 等待流执行完成（最多 120 秒）...");
+            boolean completed = latch.await(120, TimeUnit.SECONDS);
+
+            if (!completed) {
+                log.warn("⚠️ 流在超时时间内未完成");
+                return "请求处理超时，请检查日志和沙箱服务状态";
+            }
+
+            if (hasError[0]) {
+                return "请求执行出错，请查看日志: " + result.toString();
+            }
+
+            log.info("🎉 智能体执行完成。结果: {}", result.toString());
+
+        } catch (Exception e) {
+            log.error("❌ 错误: {}", e.getMessage(), e);
+            return "请求处理失败: " + e.getMessage();
+        }
+
+        return "请求已完成，请查看控制台日志获取详细执行过程";
     }
 }

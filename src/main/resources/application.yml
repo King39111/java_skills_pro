@@ -1,6 +1,9 @@
 server:
   port: 19999
 
+sandbox:
+  base-url: http://localhost:8877
+
 spring:
   main:
     allow-bean-definition-overriding: true
