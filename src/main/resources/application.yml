@@ -77,6 +77,25 @@ spring:
     exclude:
       - io.agentscope.runtime.autoconfigure.A2aAutoConfiguration
 
+agentscope:
+  core:
+    model:
+      api-key: apikey
+      model-name: qwen-plus
+  # 开启可观测性，这是数据上报到 Studio 的关键
+  observability:
+    enabled: true
+    exporter: otlp # 或 console，具体取决于 Studio 的支持方式
+    endpoint: http://localhost:3000/v1/traces # 这里可能需要配置数据上报的专用端点，而非页面访问端点
+otel:
+  service:
+    name: my-service-agent
+  trace:
+    exporter: otlp
+    sampler:
+      ratio: 1.0
+dashscope:
+  api-key: apikey
 
 qianwen:
   API_KEY: sk-f5bb24c138ea4b7996e67c215d729c20

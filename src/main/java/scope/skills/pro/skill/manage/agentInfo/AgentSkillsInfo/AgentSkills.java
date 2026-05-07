@@ -12,6 +12,7 @@ import io.agentscope.core.skill.repository.ClasspathSkillRepository;
 import io.agentscope.core.state.SessionKey;
 import io.agentscope.core.state.SimpleSessionKey;
 import io.agentscope.core.tool.Toolkit;
+import io.agentscope.core.hook.Hook;
 import lombok.extern.log4j.Log4j2;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -56,36 +57,46 @@ public class AgentSkills {
     public static ReActAgent createAgentForUser(InMemoryMemory memory, Toolkit toolkit) {
         log.info("正在创建智能体，工具集包含 {} 个工具: {}",
                 toolkit.getToolNames().size(), toolkit.getToolNames());
-        // 使用传入的 toolkit 创建 SkillBox
         SkillBox skillBox = new SkillBox(toolkit);
         try {
             ClasspathSkillRepository repository = new ClasspathSkillRepository("skills");
             List<AgentSkill> allSkills = repository.getAllSkills();
-            // 记录注册前的工具列表
             log.info("技能注册前的工具列表: {}", toolkit.getToolNames());
-            // 正确的方式：直接注册 skill，让 SkillBox 自动处理
             allSkills.forEach(AgentSkill -> {
                 log.info("正在注册技能: {} - {}", AgentSkill.getName(), AgentSkill.getDescription().substring(0, Math.min(50, AgentSkill.getDescription().length())));
                 skillBox.registration()
                         .skill(AgentSkill)
-                        .apply();  // 只需要注册 skill，不需要手动创建 tool
+                        .apply();
             });
-            // 记录注册后的工具列表
             log.info("已加载 {} 个技能", allSkills.size());
             log.info("技能注册后的工具列表: {}", toolkit.getToolNames());
         } catch (Exception e) {
             log.error("加载技能时出错", e);
             throw new RuntimeException("加载技能失败", e);
         }
-        // 创建智能体
+        
+        Hook pendingToolRecoveryHook = new Hook() {
+            @Override
+            public <T extends io.agentscope.core.hook.HookEvent> Mono<T> onEvent(T event) {
+                if (event instanceof io.agentscope.core.hook.PreCallEvent) {
+                    log.info("🔄 检测到新的调用请求，检查是否有待处理的工具调用...");
+                }
+                return Mono.just(event);
+            }
+            
+            @Override
+            public int priority() {
+                return 100;
+            }
+        };
+
         ReActAgent agent = ReActAgent.builder()
-                // 最大迭代次数
                 .maxIters(10)
                 .skillBox(skillBox)
                 .toolkit(toolkit)
                 .name("智能助手")
                 .hook(new AgentHook().createLogHook())
-                // 系统提示词 - 明确说明可以使用 Python 代码执行工具和技能
+                .hook(pendingToolRecoveryHook)
                 .sysPrompt("你是一个有用的智能助手。你可以访问以下工具：\n" +
                         "1. Python 代码执行工具（run_python_code、run_shell_command）- 在沙箱环境中执行代码\n" +
                         "2. 各种技能工具（docx、pdf、database 等）- 用于文档处理、数据库查询等任务\n" +
@@ -93,10 +104,8 @@ public class AgentSkills {
                 .model(AgentSkills.createDashScopeChatModel())
                 .memory(memory)
                 .build();
-        // 验证最终的工具列表
         Set<String> finalTools = agent.getToolkit().getToolNames();
         log.info("最终智能体工具集包含 {} 个工具: {}", finalTools.size(), finalTools);
-        // 检查是否包含沙箱工具
         boolean hasSandboxTools = finalTools.stream()
                 .anyMatch(name -> name.contains("python") || name.contains("ipython") || name.contains("shell"));
         if (!hasSandboxTools) {
