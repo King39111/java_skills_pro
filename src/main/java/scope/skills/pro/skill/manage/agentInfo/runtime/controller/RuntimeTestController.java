@@ -30,6 +30,10 @@ public class RuntimeTestController {
     @Autowired(required = false)
     private MyFridayAgentHandler myFridayAgentHandler;
 
+//    @Autowired
+//    private AgentScopeClient agentScopeClient;
+
+
     private String agentId;
     private ReActAgent agent;
 
@@ -44,14 +48,7 @@ public class RuntimeTestController {
                 agentId = agent.getAgentId();
                 Set<String> toolNames = agent.getToolkit().getToolNames();
                 log.info("🛠️ 可用工具: {}", toolNames);
-
             }
-
-//            // 使用更明确的指令，强制智能体调用 Python 工具
-//            String testPrompt = "请使用 Python 代码计算 1+1 的结果，并打印出来。必须使用 run_python_code 工具执行。";
-//
-//            log.info("🚀 开始执行智能体流，提示词: {}", testPrompt);
-
             CountDownLatch latch = new CountDownLatch(1);
             final StringBuilder result = new StringBuilder();
             final boolean[] hasError = {false};
@@ -60,20 +57,29 @@ public class RuntimeTestController {
             Flux<Event> stream = agent.stream(Msg.builder()
                     .textContent(request.getRequestion())
                     .build());
-
             stream.doOnNext(event -> {
                         eventCount[0]++;
-                        if (event.getType() == EventType.TOOL_RESULT) {
+                        EventType type = event.getType();
+                        log.info("📨 收到事件 #{}: 类型={}", eventCount[0], type);
+                        
+                        if (type == EventType.TOOL_RESULT) {
                             log.info("✅ ✅ ✅ 收到工具执行结果！");
                             if (event.getMessage() != null) {
                                 log.info("   工具结果内容: {}", event.getMessage());
+                                String toolResult = event.getMessage().getTextContent();
+                                if (toolResult != null && !toolResult.isEmpty()) {
+                                    log.info("   工具结果文本: {}", toolResult);
+                                }
                             }
                         }
+                        
                         if (event.getMessage() != null) {
                             String textContent = event.getMessage().getTextContent();
                             if (textContent != null && !textContent.isEmpty()) {
                                 log.info("💬 消息: {}", textContent);
                                 result.append(textContent);
+                            } else {
+                                log.debug("⚠️ 消息内容为空或null，消息对象: {}", event.getMessage().getClass().getSimpleName());
                             }
                         }
                     })
@@ -109,4 +115,15 @@ public class RuntimeTestController {
 
         return "请求已完成，请查看控制台日志获取详细执行过程";
     }
+
+//    @GetMapping("/test-agent")
+//    public String test() {
+//        // 给智能体发消息
+//        String prompt = "你好，介绍一下自己";
+//
+//        // 调用 Studio 里的智能体
+//        String response = agentScopeClient.chat("default-agent", prompt);
+//
+//        return "AI 返回：" + response;
+//    }
 }
